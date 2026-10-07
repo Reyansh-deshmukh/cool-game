@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>STARHOLLOW — Story RPG</title>
+<style>
+:root{
+  --ink:#2a2033; --cream:#fff0c4; --paper:#e6c879; --brown:#704a39;
+  --red:#b7474d; --green:#69844b; --blue:#496b87; --dark:#17151e;
+  --panel:#32273a; --panel2:#3d3041; --line:#8e6d55; --gold:#f2c968;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#0f0d14;color:var(--cream);font-family:monospace}
+body{display:flex;justify-content:center;align-items:center;padding:14px;overflow:auto}
+#app{
+  width:min(1250px,97vw); min-height:min(820px,95vh); background:#1b1723;
+  border:6px solid #4f3b4b; box-shadow:0 18px 0 #08070b,0 28px 60px #000b;
+  position:relative; overflow:hidden;
+}
+.screen{position:absolute;inset:0;display:none}
+.screen.active{display:block}
+#login{
+  background:
+    radial-gradient(circle at 20% 15%,#534364 0 3px,transparent 4px),
+    radial-gradient(circle at 72% 24%,#725b62 0 2px,transparent 3px),
+    linear-gradient(#201b2c,#14111b);
+  display:none;align-items:center;justify-content:center;padding:24px;
+}
+#login.active{display:flex}
+.titleWrap{text-align:center;width:min(480px,94vw)}
+.logo{
+  font-size:56px;line-height:.92;font-weight:900;letter-spacing:5px;
+  color:#f4cf72;text-shadow:5px 5px #75474c,10px 10px #1d1724;
+}
+.tag{margin-top:12px;color:#cbb8ad;font-size:14px;line-height:1.5}
+.box{
+  margin-top:28px;background:#2b2331;border:4px solid #735569;
+  box-shadow:8px 8px #0f0c13;padding:18px;text-align:left;
+}
+label{display:block;font-size:11px;color:#bba7a9;text-transform:uppercase;letter-spacing:1px;margin:10px 0 5px}
+input{
+  width:100%;padding:13px 12px;background:#17131c;color:#ffecc1;border:3px solid #5a4654;
+  outline:none;font:700 15px monospace;
+}
+input:focus{border-color:#d1a76a}
+.btn{
+  border:0;background:#e4b85d;color:#2b202e;font:900 15px monospace;
+  padding:12px 16px;cursor:pointer;box-shadow:0 4px 0 #70473b;margin-top:14px;
+}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #70473b}
+.tiny{font-size:10px;color:#9c8c9b;text-align:center;margin-top:10px}
+
+#game{
+  display:grid;grid-template-columns:1fr 286px;background:#17131d;
+}
+#game.active{display:grid}
+#view{position:relative;min-width:0;background:#1a2430}
+canvas{width:100%;height:100%;display:block;image-rendering:pixelated;background:#203226}
+#side{
+  border-left:5px solid #503b4b;background:#2a2230;padding:12px;
+  display:flex;flex-direction:column;gap:9px;
+}
+.panel{background:#362b3a;border:3px solid #574452;padding:9px}
+.panel h3{font-size:11px;margin:0 0 6px;color:#e6c26d;text-transform:uppercase;letter-spacing:1px}
+#questText,#storyText{font-size:12px;line-height:1.45;color:#e3d5cb}
+#stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px}
+.stat{background:#211a26;border:2px solid #4f3d4b;padding:6px}
+.stat b{color:#efc666}
+.bar{height:8px;background:#16121a;border:1px solid #4d3b43;margin-top:4px}
+.bar i{display:block;height:100%}
+.hp{background:#b84c52}.mp{background:#4c7397}.xp{background:#c3a153}
+#inv{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.slot{
+  height:49px;background:#211a26;border:2px solid #56424f;position:relative;
+  display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;
+}
+.slot.active{border-color:#efc566;box-shadow:inset 0 0 0 2px #7d6049}
+.slot small{position:absolute;right:3px;bottom:1px;font-size:8px;color:#cdbac0}
+#help{font-size:10px;line-height:1.55;color:#bbaeb7}
+#saveMsg{font-size:10px;color:#a99ba8;min-height:12px}
+#dialog{
+  position:absolute;left:3%;right:3%;bottom:3%;background:#2a2230f5;
+  border:4px solid #dfbd6b;box-shadow:8px 8px #17101c;padding:12px;display:none;z-index:6;
+}
+#dialog .speaker{color:#f0ca70;font-weight:900;font-size:12px}
+#dialog .text{font-size:16px;line-height:1.45;margin-top:5px}
+#dialog .next{font-size:9px;color:#aa9aa6;margin-top:8px}
+#bossHud{
+  position:absolute;top:14px;left:50%;transform:translateX(-50%);
+  width:min(520px,72%);display:none;z-index:5;text-align:center;
+}
+#bossName{font-size:13px;font-weight:900;color:#f1ca6d;text-shadow:2px 2px #3f2631}
+#bossBar{height:12px;border:3px solid #1d161e;background:#171219}
+#bossBar i{display:block;height:100%;background:#b94c54;width:100%}
+#controls{
+  position:absolute;left:12px;bottom:12px;display:grid;grid-template-columns:repeat(3,42px);
+  gap:4px;z-index:5;
+}
+.pad{width:42px;height:42px;border:3px solid #5a4651;background:#312637;color:#f3d17c;font:900 17px monospace;cursor:pointer}
+.pad.up{grid-column:2}.pad.left{grid-column:1}.pad.down{grid-column:2}.pad.right{grid-column:3}
+#hint{position:absolute;left:50%;bottom:15px;transform:translateX(-50%);font-size:10px;color:#d9c9ae;z-index:5;white-space:nowrap}
+#toast{
+  position:absolute;top:14px;right:14px;background:#2a2130;border:3px solid #66504d;padding:8px 10px;
+  font-size:10px;display:none;z-index:7;
+}
+#pause{position:absolute;inset:0;background:#15121bf0;display:none;align-items:center;justify-content:center;z-index:8}
+#pause.active{display:flex}
+.pauseBox{background:#2c2331;border:4px solid #7c5c58;padding:20px;text-align:center;box-shadow:10px 10px #08070b}
+.pauseBox h2{margin:0;color:#efc969}
+@media(max-width:900px){
+  body{padding:0}#app{width:100vw;min-height:100vh;border-width:3px}
+  #game{grid-template-columns:1fr;grid-template-rows:minmax(520px,70vh) auto}
+  #side{border-left:0;border-top:4px solid #503b4b}
+  .logo{font-size:42px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <section id="login" class="screen active">
+    <div class="titleWrap">
+      <div class="logo">STARHOLLOW</div>
+      <div class="tag">A hand-drawn little world of lanterns, old roads,<br>mysterious ruins and things worth remembering.</div>
+      <div class="box">
+        <label>Traveler name</label>
+        <input id="nameInput" maxlength="14" placeholder="Enter a name..." autocomplete="off">
+        <label>Save slot</label>
+        <select id="slotInput" style="width:100%;padding:12px;background:#17131c;color:#ffecc1;border:3px solid #5a4654;font:700 14px monospace">
+          <option value="1">SAVE 1 — The Old Road</option>
+          <option value="2">SAVE 2 — Empty</option>
+          <option value="3">SAVE 3 — Empty</option>
+        </select>
+        <button class="btn" id="playBtn">PLAY STORY</button>
+        <div class="tiny">Your story saves in this browser. No account or internet is required.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="game" class="screen">
+    <div id="view">
+      <canvas id="canvas" width="960" height="640" tabindex="0"></canvas>
+      <div id="bossHud"><div id="bossName">BOSS</div><div id="bossBar"><i></i></div></div>
+      <div id="dialog">
+        <div class="speaker"></div><div class="text"></div><div class="next">SPACE / ENTER / E — continue</div>
+      </div>
+      <div id="toast"></div>
+      <div id="hint"></div>
+      <div id="controls">
+        <button class="pad up" data-key="ArrowUp">▲</button>
+        <button class="pad left" data-key="ArrowLeft">◀</button>
+        <button class="pad down" data-key="ArrowDown">▼</button>
+        <button class="pad right" data-key="ArrowRight">▶</button>
+      </div>
+      <div id="pause">
+        <div class="pauseBox">
+          <h2>PAUSED</h2>
+          <div style="font-size:11px;color:#c2b3b7;margin:9px 0 14px">Press P or click resume.</div>
+          <button class="btn" id="resumeBtn">RESUME</button>
+          <button class="btn" id="quitBtn" style="background:#a96562">TITLE SCREEN</button>
+        </div>
+      </div>
+    </div>
+    <aside id="side">
+      <div class="panel">
+        <h3 id="playerName">Traveler</h3>
+        <div id="stats">
+          <div class="stat">LV <b id="lvl">1</b></div>
+          <div class="stat">GOLD <b id="gold">0</b></div>
+          <div class="stat" style="grid-column:1/3">HP <b id="hpText">30 / 30</b><div class="bar"><i id="hpBar" class="hp" style="width:100%"></i></div></div>
+          <div class="stat" style="grid-column:1/3">XP <b id="xpText">0 / 100</b><div class="bar"><i id="xpBar" class="xp" style="width:0%"></i></div></div>
+        </div>
+      </div>
+      <div class="panel"><h3>Chapter</h3><div id="chapterText" style="font-size:14px;font-weight:900">The Old Road</div></div>
+      <div class="panel"><h3>Quest</h3><div id="questText">Find the Lantern Keeper in the village.</div></div>
+      <div class="panel"><h3>Story</h3><div id="storyText">The moon has stopped moving above the hill.</div></div>
+      <div class="panel"><h3>Weapons</h3><div id="inv">
+        <div class="slot active" data-slot="0">⚔<small>1</small></div>
+        <div class="slot" data-slot="1">🪃<small>2</small></div>
+        <div class="slot" data-slot="2">✚<small>3</small></div>
+        <div class="slot" data-slot="3">?</div>
+      </div></div>
+      <div class="panel"><h3>Controls</h3><div id="help">
+        <b>MOVE</b> WASD / Arrow Keys<br>
+        <b>ATTACK</b> J or Z<br>
+        <b>USE</b> K or X<br>
+        <b>TALK / PICK UP</b> E / Space<br>
+        <b>WEAPON</b> 1 / 2 / 3<br>
+        <b>PAUSE</b> P / Esc
+      </div></div>
+      <button class="btn" id="saveBtn">SAVE GAME</button>
+      <div id="saveMsg"></div>
+    </aside>
+  </section>
+</div>
+
+<script>
+"use strict";
+const C=document.getElementById('canvas'),ctx=C.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+const W=C.width,H=C.height,T=40;
+const input={};
+let state=null, paused=false, dialog=null, dialogueIndex=0, currentWeapon=0, gameStarted=false;
+let last=0, attackCd=0, hurtCd=0, spawnTimer=0;
+
+const worldW=24, worldH=16;
+const tiles=Array.from({length:worldH},()=>Array(worldW).fill(0));
+for(let y=0;y<worldH;y++)for(let x=0;x<worldW;x++)if(x===0||y===0||x===worldW-1||y===worldH-1)tiles[y][x]=1;
+function block(x,y,w,h){for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++)if(tiles[yy]&&tiles[yy][xx]!==undefined)tiles[yy][xx]=1}
+block(4,2,3,3); block(14,2,4,3); block(18,9,3,3); block(3,11,4,2); block(10,5,2,2); block(12,12,4,2);
+
+const flowers=[[2,3],[4,8],[7,2],[9,8],[13,3],[16,7],[20,6],[7,13],[16,12],[21,13]];
+const trees=[[2,2],[8,2],[12,2],[20,2],[22,4],[2,9],[8,14],[20,14],[22,13],[9,9],[4,6],[17,6]];
+const stones=[[8,12],[13,4],[21,8],[5,8],[10,11],[16,5]];
+
+const npcs=[
+ {id:'keeper',x:175,y:300,w:22,h:28,name:'Bram',color:'#b6685e'},
+ {id:'smith',x:510,y:300,w:22,h:28,name:'Mira',color:'#7d9c73'},
+ {id:'child',x:355,y:220,w:18,h:26,name:'Pip',color:'#c2a165'}
+];
+
+const saveDefaults=slot=>({
+ slot, name:'Traveler', chapter:1, gold:12, level:1, xp:0, hp:36, maxHp:36,
+ x:105,y:535, weapon:0, potions:3, storyFlags:{keeper:false,smith:false,boss1:false,boss2:false},
+ enemies:[], boss:null
+});
+
+function load(slot){
+ const raw=localStorage.getItem('starhollow_save_'+slot);
+ state=raw?Object.assign(saveDefaults(slot),JSON.parse(raw)):saveDefaults(slot);
+ state.slot=slot; state.name=state.name||'Traveler';
+}
+function save(){
+ localStorage.setItem('starhollow_save_'+state.slot,JSON.stringify(state));
+ flash('GAME SAVED');
+}
+function flash(t){
+ const el=document.getElementById('toast');el.textContent=t;el.style.display='block';
+ setTimeout(()=>el.style.display='none',1200);
+}
+
+const chapters={
+ 1:{name:'The Old Road',quest:'Find Bram, the Lantern Keeper, in the village.',story:'Every autumn the village lights seven lanterns. Tonight there are only six.'},
+ 2:{name:'The Ashen Gate',quest:'Ask Mira to repair the old sword, then cross the gate.',story:'Mira says the missing seventh lantern was carried into the forest decades ago.'},
+ 3:{name:'The Root Warden',quest:'Enter the grove and defeat the Root Warden.',story:'The forest guardian is angry, but it remembers a promise made by your family.'},
+ 4:{name:'The Star Tomb',quest:'Climb the hill and defeat the Starbound King.',story:'At the top of the hill is the reason the moon has been standing still.'},
+ 5:{name:'A Lantern Home',quest:'Return to Bram with the moon shard.',story:'Some journeys are about finding a place. Others are about deciding to return.'}
+};
+
+function updateUI(){
+ const ch=chapters[state.chapter];
+ document.getElementById('playerName').textContent=state.name;
+ document.getElementById('lvl').textContent=state.level;
+ document.getElementById('gold').textContent=state.gold;
+ document.getElementById('hpText').textContent=`${Math.max(0,state.hp)} / ${state.maxHp}`;
+ document.getElementById('hpBar').style.width=(Math.max(0,state.hp)/state.maxHp*100)+'%';
+ document.getElementById('xpText').textContent=`${state.xp} / 100`;
+ document.getElementById('xpBar').style.width=Math.min(100,state.xp)+'%';
+ document.getElementById('chapterText').textContent=ch.name;
+ document.getElementById('questText').textContent=ch.quest;
+ document.getElementById('storyText').textContent=ch.story;
+ document.querySelectorAll('.slot').forEach((s,i)=>s.classList.toggle('active',i===currentWeapon));
+}
+
+function gainXP(n){
+ state.xp+=n;
+ while(state.xp>=100){state.xp-=100;state.level++;state.maxHp+=6;state.hp=state.maxHp;flash('LEVEL UP!')}
+}
+function movePlayer(dt){
+ let dx=0,dy=0;
+ if(input.KeyA||input.ArrowLeft)dx-=1;if(input.KeyD||input.ArrowRight)dx+=1;
+ if(input.KeyW||input.ArrowUp)dy-=1;if(input.KeyS||input.ArrowDown)dy+=1;
+ if(!dx&&!dy)return;
+ const len=Math.hypot(dx,dy);dx/=len;dy/=len;
+ const sp=145*dt;
+ const nx=state.x+dx*sp,ny=state.y+dy*sp;
+ if(!solid(nx,state.y,20,24))state.x=nx;
+ if(!solid(state.x,ny,20,24))state.y=ny;
+}
+function solid(x,y,w,h){
+ const l=Math.floor(x/T),r=Math.floor((x+w)/T),t=Math.floor(y/T),b=Math.floor((y+h)/T);
+ if(l<0||t<0||r>=worldW||b>=worldH)return true;
+ for(let yy=t;yy<=b;yy++)for(let xx=l;xx<=r;xx++)if(tiles[yy][xx]===1)return true;
+ return false;
+}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function nearby(o,range=66){return dist(state,o)<range}
+function enemyAt(x,y){return state.enemies.find(e=>Math.hypot(e.x-x,e.y-y)<26)}
+function spawnEnemy(type,x,y){
+ const hp=type==='slime'?24:38;
+ state.enemies.push({type,x,y,w:22,h:20,hp,maxHp:hp,cd:0,hit:0});
+}
+function setupChapter(){
+ state.enemies=[];
+ state.boss=null;
+ if(state.chapter===3)state.boss={type:'Root Warden',x:750,y:290,w:64,h:70,hp:260,maxHp:260,cd:0,hit:0};
+ if(state.chapter===4)state.boss={type:'Starbound King',x:780,y:275,w:60,h:72,hp:380,maxHp:380,cd:0,hit:0};
+}
+
+function openDialogue(lines,after=null){
+ dialog={lines,after};dialogueIndex=0;renderDialogue();
+}
+function renderDialogue(){
+ if(!dialog)return;
+ const raw=dialog.lines[dialogueIndex];
+ const idx=raw.indexOf(':');
+ document.querySelector('#dialog .speaker').textContent=idx>0?raw.slice(0,idx):'';
+ document.querySelector('#dialog .text').textContent=idx>0?raw.slice(idx+1).trim():raw;
+ document.getElementById('dialog').style.display='block';
+}
+function advanceDialogue(){
+ if(!dialog)return;
+ dialogueIndex++;
+ if(dialogueIndex>=dialog.lines.length){
+   const cb=dialog.after;dialog=null;document.getElementById('dialog').style.display='none';if(cb)cb();
+ }else renderDialogue();
+}
+
+function interact(){
+ if(dialog){advanceDialogue();return}
+ if(state.chapter===1&&nearby(npcs[0])){
+   openDialogue([
+    'Bram: You came at the right time.',
+    `${state.name}: The seventh lantern is missing.`,
+    'Bram: Not missing. Carried away.',
+    'Bram: Your family used to guard the Ashen Gate.',
+    'Bram: Find Mira at the forge. She will give you what your grandmother left behind.'
+   ],()=>{state.storyFlags.keeper=true;state.chapter=2;updateUI();save()});
+   return;
+ }
+ if(state.chapter===2&&nearby(npcs[1])){
+   openDialogue([
+    'Mira: This blade belonged to your grandmother.',
+    `${state.name}: It looks like a piece of junk.`,
+    'Mira: Good weapons rarely look impressive before they have a story.',
+    'Mira: Take it. The forest remembers the people who enter it.'
+   ],()=>{state.storyFlags.smith=true;state.gold+=18;state.chapter=3;setupChapter();updateUI();save()});
+   return;
+ }
+ if(state.chapter===5&&nearby(npcs[0])){
+   openDialogue([
+    'Bram: So the moon is moving again.',
+    `${state.name}: Was I supposed to bring it back?`,
+    'Bram: No. You were supposed to choose what to do with it.',
+    'Bram: Looks like you chose home.'
+   ],()=>{flash('STORY COMPLETE');save()});
+   return;
+ }
+ const e=state.enemies.find(e=>Math.hypot(e.x-state.x,e.y-state.y)<60);
+ if(e){attack();return}
+}
+
+function attack(){
+ if(attackCd>0||dialog)return;
+ attackCd=.28;
+ const weapon=currentWeapon;
+ if(weapon===2){if(state.potions>0){state.potions--;state.hp=Math.min(state.maxHp,state.hp+18);flash('+18 HP');}return}
+ const damage=weapon===0?22:14;
+ const reach=weapon===0?58:115;
+ let hit=false;
+ const targets=[...state.enemies]; if(state.boss)targets.push(state.boss);
+ for(const e of targets){
+   if(Math.hypot(e.x-state.x,e.y-state.y)<reach){
+     e.hp-=damage; e.hit=.12; hit=true;
+     if(e.hp<=0)defeat(e);
+   }
+ }
+ if(hit)flash(weapon===0?'SLASH!':'THROW!');
+}
+function defeat(e){
+ if(e===state.boss){
+   if(state.chapter===3){state.storyFlags.boss1=true;state.chapter=4;state.x=110;state.y=535;flash('WARDEN DEFEATED');gainXP(80);setupChapter();}
+   else if(state.chapter===4){state.storyFlags.boss2=true;state.chapter=5;state.x=160;state.y=300;state.boss=null;state.gold+=80;state.hp=state.maxHp;flash('KING DEFEATED');gainXP(120);}
+   updateUI();save();return;
+ }
+ state.enemies=state.enemies.filter(x=>x!==e);state.gold+=e.type==='slime'?5:8;gainXP(18);
+ if(Math.random()<.35)state.potions++;
+}
+function enemyAI(dt){
+ for(const e of state.enemies){
+   if(e.hit>0)e.hit-=dt;
+   e.cd-=dt;
+   const d=Math.hypot(state.x-e.x,state.y-e.y);
+   if(d<220){
+     const dx=(state.x-e.x)/(d||1),dy=(state.y-e.y)/(d||1);
+     const speed=e.type==='slime'?56:46;
+     const nx=e.x+dx*speed*dt,ny=e.y+dy*speed*dt;
+     if(!solid(nx,e.y,e.w,e.h))e.x=nx;if(!solid(e.x,ny,e.w,e.h))e.y=ny;
+     if(d<30&&e.cd<=0){e.cd=1.1;damagePlayer(e.type==='slime'?5:7)}
+   }
+ }
+ if(state.boss)bossAI(dt);
+}
+function bossAI(dt){
+ const b=state.boss;if(!b)return;
+ b.cd-=dt;if(b.hit>0)b.hit-=dt;
+ const d=Math.hypot(state.x-b.x,state.y-b.y);
+ if(d<250&&b.cd<=0){
+   b.cd=state.chapter===3?1.3:.9;
+   damagePlayer(state.chapter===3?7:9);
+   spawnEnemy(state.chapter===3?'slime':'sentinel',b.x-60+Math.random()*120,b.y+65);
+ }
+ if(d<260){
+   const dx=(state.x-b.x)/(d||1),dy=(state.y-b.y)/(d||1),sp=state.chapter===3?24:32;
+   const nx=b.x+dx*sp*dt,ny=b.y+dy*sp*dt;
+   if(!solid(nx,b.y,b.w,b.h))b.x=nx;
+   if(!solid(b.x,ny,b.w,b.h))b.y=ny;
+ }
+}
+function damagePlayer(n){
+ if(hurtCd>0)return;
+ hurtCd=.6;state.hp-=n;flash('-'+n+' HP');
+ if(state.hp<=0){
+   state.hp=state.maxHp;state.x=105;state.y=535;state.gold=Math.max(0,state.gold-8);
+   flash('YOU WAKE AT THE LAST CAMP');save();
+ }
+ updateUI();
+}
+
+function update(dt){
+ attackCd=Math.max(0,attackCd-dt);hurtCd=Math.max(0,hurtCd-dt);
+ if(dialog||paused)return;
+ movePlayer(dt); enemyAI(dt);
+ // Story encounters
+ if(state.chapter===1){
+   if(Math.random()<0.0025 && state.enemies.length<2)spawnEnemy('slime',560+Math.random()*180,420+Math.random()*110);
+ }
+ if(state.chapter===2){
+   if(Math.random()<0.004 && state.enemies.length<3)spawnEnemy('slime',500+Math.random()*300,170+Math.random()*320);
+ }
+ if(state.chapter===3 && state.boss && Math.random()<0.01 && state.enemies.length<4)spawnEnemy('slime',650+Math.random()*170,180+Math.random()*280);
+ if(state.chapter===4 && state.boss && Math.random()<0.012 && state.enemies.length<5)spawnEnemy('sentinel',620+Math.random()*220,150+Math.random()*340);
+}
+
+function draw(){
+ ctx.fillStyle='#20372a';ctx.fillRect(0,0,W,H);
+ // tile grass
+ for(let y=0;y<H;y+=T)for(let x=0;x<W;x+=T){
+   ctx.fillStyle=((x/T+y/T)%2)?'#2d4a37':'#31503b';ctx.fillRect(x,y,T,T);
+   ctx.fillStyle='#3b5b44';ctx.fillRect(x+8,y+11,3,2);ctx.fillRect(x+27,y+27,2,2);
+ }
+ // roads
+ ctx.fillStyle='#967456';ctx.fillRect(0,5*T,W,2*T);ctx.fillRect(7*T,0,2*T,H);
+ // lake
+ ctx.fillStyle='#416a73';ctx.fillRect(13*T,8*T,6*T,4*T);
+ for(let y=8*T+8;y<12*T;y+=15){ctx.fillStyle='#6f969d';ctx.fillRect(13*T+7,y,5*T,2)}
+ // buildings
+ drawHouse(4*T,2*T,'#a76155');drawHouse(14*T,2*T,'#7b6658');drawHouse(18*T,9*T,'#785979');
+ // objects
+ trees.forEach(p=>drawTree(p[0]*T+20,p[1]*T+20));
+ flowers.forEach(p=>{ctx.fillStyle='#d68e93';ctx.fillRect(p[0]*T+12,p[1]*T+16,5,5);ctx.fillStyle='#ecc96e';ctx.fillRect(p[0]*T+17,p[1]*T+15,4,4)});
+ stones.forEach(p=>{ctx.fillStyle='#8e887e';ctx.fillRect(p[0]*T+8,p[1]*T+16,18,8);});
+ // gate / grove
+ if(state.chapter>=3){ctx.fillStyle='#4b3329';ctx.fillRect(22*T,4*T,8,120);ctx.fillRect(23*T,4*T,8,120)}
+ // npcs visible as appropriate
+ if(state.chapter===1||state.chapter===5)drawPerson(npcs[0]);
+ if(state.chapter===2)drawPerson(npcs[1]);
+ if(state.chapter<=2)drawPerson(npcs[2]);
+ // enemies / boss
+ state.enemies.forEach(drawEnemy); if(state.boss)drawBoss(state.boss);
+ drawPlayer();
+ // weapon swing
+ if(attackCd>.16&&currentWeapon<2){
+   ctx.save();ctx.translate(state.x+10,state.y+10);
+   ctx.fillStyle=currentWeapon===0?'#f0d27b':'#c9a6e5';
+   ctx.fillRect(22,-4,currentWeapon===0?28:20,7);ctx.restore();
+ }
+ updateBossHud();
+}
+
+function drawTree(x,y){
+ ctx.fillStyle='#202b22';ctx.fillRect(x-6,y+16,12,22);ctx.fillStyle='#274636';ctx.fillRect(x-19,y-4,38,32);ctx.fillStyle='#356046';ctx.fillRect(x-12,y-14,27,28);
+}
+function drawHouse(x,y,roof){
+ ctx.fillStyle='#59463c';ctx.fillRect(x,y+28,116,74);ctx.fillStyle=roof;
+ ctx.beginPath();ctx.moveTo(x-10,y+31);ctx.lineTo(x+58,y-22);ctx.lineTo(x+126,y+31);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#52383a';ctx.fillRect(x+48,y+58,20,44);ctx.fillStyle='#e1b65f';ctx.fillRect(x+14,y+53,19,17);ctx.fillRect(x+84,y+53,19,17);
+}
+function drawPerson(p){
+ const x=p.x,y=p.y;
+ ctx.fillStyle='#1e1821';ctx.fillRect(x-2,y+22,27,7);ctx.fillStyle=p.color;ctx.fillRect(x+2,y+4,18,21);
+ ctx.fillStyle='#f0bd89';ctx.fillRect(x+4,y-7,14,13);ctx.fillStyle='#47303a';ctx.fillRect(x+2,y-10,18,7);
+}
+function drawPlayer(){
+ const x=state.x,y=state.y;ctx.fillStyle='#18141c';ctx.fillRect(x-2,y+21,25,8);
+ ctx.fillStyle='#d2b05c';ctx.fillRect(x+2,y+4,17,23);ctx.fillStyle='#f0bf8a';ctx.fillRect(x+5,y-7,13,13);
+ ctx.fillStyle='#4b3542';ctx.fillRect(x+3,y-10,18,5);ctx.fillStyle='#567f8c';ctx.fillRect(x+2,y+13,17,5);
+}
+function drawEnemy(e){
+ const c=e.type==='slime'?'#6f9d5e':'#7a6877';
+ ctx.fillStyle=e.hit>0?'#fff2cb':c;ctx.fillRect(e.x-11,e.y-8,23,24);ctx.fillStyle='#241c27';ctx.fillRect(e.x-5,e.y-1,4,4);ctx.fillRect(e.x+4,e.y-1,4,4);
+}
+function drawBoss(b){
+ ctx.fillStyle=b.hit>0?'#ffecc6':(state.chapter===3?'#6b7b52':'#74516f');
+ ctx.fillRect(b.x-28,b.y-30,56,63);ctx.fillRect(b.x-42,b.y-4,16,15);ctx.fillRect(b.x+26,b.y-4,16,15);
+ ctx.fillStyle='#271c27';ctx.fillRect(b.x-15,b.y-8,8,7);ctx.fillRect(b.x+8,b.y-8,8,7);
+}
+function updateBossHud(){
+ const h=document.getElementById('bossHud');
+ if(!state.boss){h.style.display='none';return}
+ h.style.display='block';document.getElementById('bossName').textContent=state.boss.type.toUpperCase();
+ document.querySelector('#bossBar i').style.width=Math.max(0,state.boss.hp/state.boss.maxHp*100)+'%';
+}
+function renderHint(){
+ const el=document.getElementById('hint'); let t='';
+ if(dialog||paused){el.textContent='';return}
+ if(state.chapter===1&&nearby(npcs[0]))t='E / SPACE  TALK TO BRAM';
+ else if(state.chapter===2&&nearby(npcs[1]))t='E / SPACE  TALK TO MIRA';
+ else if(state.chapter===5&&nearby(npcs[0]))t='E / SPACE  TALK TO BRAM';
+ else if(enemyAt(state.x+30,state.y))t='J / Z  ATTACK';
+ else t='WASD / ARROWS  MOVE  •  J/Z  ATTACK';
+ el.textContent=t;
+}
+
+function pickWeapon(n){
+ if(n===3)return;
+ if(n===2&&state.potions<=0){flash('NO POTIONS');return}
+ currentWeapon=n;updateUI();
+}
+function bootGame(){
+ document.getElementById('login').classList.remove('active');document.getElementById('game').classList.add('active');
+ gameStarted=true;C.focus();setupChapter();updateUI();
+ openDialogue([
+   `Old Song: ${state.name}...`,
+   'Old Song: When the moon stops over Starhollow, follow the lanterns.',
+   'Old Song: And do not be afraid of what remembers you.'
+ ]);
+}
+function start(){
+ const name=(document.getElementById('nameInput').value.trim()||'Rowan').slice(0,14);
+ const slot=Number(document.getElementById('slotInput').value);load(slot);state.name=name;
+ const existed=!!localStorage.getItem('starhollow_save_'+slot);
+ if(!existed)save();
+ bootGame();
+}
+document.getElementById('playBtn').onclick=start;
+document.getElementById('saveBtn').onclick=save;
+document.getElementById('resumeBtn').onclick=()=>{paused=false;document.getElementById('pause').classList.remove('active');C.focus()};
+document.getElementById('quitBtn').onclick=()=>{
+ save();paused=false;gameStarted=false;document.getElementById('pause').classList.remove('active');
+ document.getElementById('game').classList.remove('active');document.getElementById('login').classList.add('active');
+};
+document.querySelectorAll('.slot').forEach(s=>s.onclick=()=>pickWeapon(Number(s.dataset.slot)));
+document.querySelectorAll('.pad').forEach(btn=>{
+ const k=btn.dataset.key;
+ const down=e=>{e.preventDefault();input[k]=true};
+ const up=e=>{e.preventDefault();input[k]=false};
+ btn.addEventListener('pointerdown',down);btn.addEventListener('pointerup',up);btn.addEventListener('pointerleave',up);
+});
+window.addEventListener('keydown',e=>{
+ if(!gameStarted)return;
+ const c=e.code;
+ if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(c))e.preventDefault();
+ input[c]=true;
+ if(dialog && (c==='Space'||c==='Enter'||c==='KeyE')){advanceDialogue();return}
+ if(!dialog && (c==='Space'||c==='Enter'||c==='KeyE'))interact();
+ if(c==='KeyJ'||c==='KeyZ')attack();
+ if(c==='KeyK'||c==='KeyX')pickWeapon(2);
+ if(c==='Digit1')pickWeapon(0);
+ if(c==='Digit2')pickWeapon(1);
+ if(c==='Digit3')pickWeapon(2);
+ if(c==='KeyP'||c==='Escape'){
+   paused=!paused;document.getElementById('pause').classList.toggle('active',paused);
+ }
+});
+window.addEventListener('keyup',e=>input[e.code]=false);
+window.addEventListener('blur',()=>{for(const k in input)input[k]=false});
+document.getElementById('nameInput').addEventListener('keydown',e=>{if(e.key==='Enter')start()});
+
+function loop(ts){
+ const dt=Math.min(.033,(ts-last||0)/1000);last=ts;
+ if(gameStarted){update(dt);draw();renderHint()}
+ requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
